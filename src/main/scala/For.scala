@@ -227,20 +227,20 @@ object For extends App {
     //    required: Option[?]
     //    l <- list
 
-    val optionAsList = for {
-      o <- option.toList
-      l <- list
-    } yield o.length + l
+//    val optionAsList = for {
+//      o <- option.toList
+//      l <- list
+//    } yield o.length + l
+//
+//    assert(optionAsList == List(2))
+//
+//    val none: Option[String] = None
+//    val optionAsList2 = for {
+//      l <- list
+//      o <- none.toList
+//    } yield o.length + l
 
-    assert(optionAsList == List(2))
-
-    val none: Option[String] = None
-    val optionAsList2 = for {
-      l <- list
-      o <- none.toList
-    } yield o.length + l
-
-    assert(optionAsList2 == List())
+//    assert(optionAsList2 == List())
   }
 
   cannotMix()
