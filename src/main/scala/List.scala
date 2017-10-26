@@ -1,3 +1,5 @@
+package fpinscala.errorhandling
+
 import scala.annotation.tailrec
 
 sealed trait List[+A]
