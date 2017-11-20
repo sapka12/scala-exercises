@@ -31,7 +31,24 @@ trait Stream[+A] {
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
 
+  //GOTO EXERCISE 7
+
+  //EXERCISE 12: Use unfold to implement map, take, takeWhile, zip and zipAll.
+
+  //EXERCISE 13 (hard)
   def startsWith[B](s: Stream[B]): Boolean = ???
+
+  //EXERCISE 14
+  //implement tails using unfold.
+  //So, given Stream(1,2,3), it would return
+  //Stream(Stream(1,2,3), Stream(2,3), Stream(3), Stream.empty).
+  def tails: Stream[Stream[A]] = ???
+
+  //EXERCISE 15 (hard, optional): Generalize tails to the function
+  //scanRight, which is like a foldRight that returns a stream of the
+  //intermediate results.
+  // Stream(1,2,3).scanRight(0)(_ + _).toList ===> List(6,5,3,0)
+
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -50,7 +67,26 @@ object Stream {
     else cons(as.head, apply(as.tail: _*))
 
   val ones: Stream[Int] = Stream.cons(1, ones)
+
+  //EXERCISE 7
+  def constant[A](a: A): Stream[A] = ???
+
+  //EXERCISE 8
   def from(n: Int): Stream[Int] = ???
 
+  //EXERCISE 9
+  val fibs: Stream[Int] = ???
+
+  //EXERCISE 10
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
+
+  //EXERCISE 11
+  val fibsViaUnfold: Stream[Int] = ???
+  def fromViaUnfold(n: Int): Stream[Int] = ???
+  def constantUnfold[A](a: A): Stream[A] = ???
+  val onesUnfold: Stream[Int] = Stream.cons(1, ones)
+
+  def hasSubsequence[A](s1: Stream[A], s2: Stream[A]): Boolean =
+    s1.tails.exists(_.startsWith(s2))
+
 }
