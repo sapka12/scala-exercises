@@ -2,6 +2,9 @@
 package fpinscala.laziness
 
 import Stream._
+
+import scala.annotation.tailrec
+
 trait Stream[+A] {
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
@@ -18,15 +21,44 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
-  def take(n: Int): Stream[A] = ???
 
-  def drop(n: Int): Stream[A] = ???
+  def toList(): List[A] = this match {
+    case Empty => Nil
+    case Cons(h, t) => h() :: t().toList()
+  }
 
-  def takeWhile(p: A => Boolean): Stream[A] = ???
+  def take(n: Int): Stream[A] = (n, this) match {
+    case (0, _) => this
+    case (_, Empty) => Empty
+    case (_, Cons(h, t)) => Cons(h, () => t().take(n-1))
+  }
 
-  def forAll(p: A => Boolean): Boolean = ???
+  def drop(n: Int): Stream[A] = (n, this) match {
+    case (0, _) => this
+    case (_, Empty) => Empty
+    case (_, Cons(_, t)) => t().drop(n-1)
+  }
 
-  def headOption: Option[A] = ???
+  def takeWhile(p: A => Boolean): Stream[A] = this match {
+    case Empty => Empty
+    case Cons(h, t) if p(h()) => Cons(h, () => t().takeWhile(p))
+    case _ => this
+  }
+
+  def takeWhileViaFold(p: A => Boolean): Stream[A] = foldRight[Stream[A]](Empty){
+    case (a, strA) => if(p(a)) Cons(() => a, () => strA) else Empty
+  }
+
+  def forAll(p: A => Boolean): Boolean = this match {
+    case Empty => true
+    case Cons(h, t) if p(h()) => t().forAll(p)
+    case _ => false
+  }
+
+  def headOption: Option[A] = this match  {
+    case Empty => None
+    case Cons(h, _) => Some(h())
+  }
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
@@ -50,8 +82,9 @@ trait Stream[+A] {
   // Stream(1,2,3).scanRight(0)(_ + _).toList ===> List(6,5,3,0)
 
 }
-case object Empty extends Stream[Nothing]
+
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
+case object Empty extends Stream[Nothing]
 
 object Stream {
   def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {
@@ -89,4 +122,11 @@ object Stream {
   def hasSubsequence[A](s1: Stream[A], s2: Stream[A]): Boolean =
     s1.tails.exists(_.startsWith(s2))
 
+}
+
+object AppSpec extends App {
+  val s: Stream[Int] = Cons(() => 1, () => Cons(() => 2, () => Cons(() => 3, () => Cons(() => 4, () => Empty))))
+
+  println(s.takeWhileViaFold(_ % 2 == 1).toList())
+  println(s.takeWhileViaFold(_ < 3).toList())
 }
