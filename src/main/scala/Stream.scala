@@ -29,8 +29,8 @@ trait Stream[+A] {
 
   def take(n: Int): Stream[A] = (n, this) match {
     case (0, _) => this
-    case (_, Empty) => Empty
-    case (_, Cons(h, t)) => Cons(h, () => t().take(n-1))
+    case (_, Empty) => empty
+    case (_, Cons(h, t)) => cons(h(), t().take(n-1))
   }
 
   def drop(n: Int): Stream[A] = (n, this) match {
@@ -41,12 +41,13 @@ trait Stream[+A] {
 
   def takeWhile(p: A => Boolean): Stream[A] = this match {
     case Empty => Empty
-    case Cons(h, t) if p(h()) => Cons(h, () => t().takeWhile(p))
+    case Cons(h, t) if p(h()) => cons(h(), t().takeWhile(p))
     case _ => this
   }
 
+  //TODO Cons => cons
   def takeWhileViaFold(p: A => Boolean): Stream[A] = foldRight[Stream[A]](Empty){
-    case (a, strA) => if(p(a)) Cons(() => a, () => strA) else Empty
+    case (a, strA) => if(p(a)) cons(a, strA) else Empty
   }
 
   def forAll(p: A => Boolean): Boolean = this match {
@@ -62,6 +63,23 @@ trait Stream[+A] {
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+
+  def map[B](f: A => B): Stream[B] = foldRight[Stream[B]](empty){
+    case (a, bs) => cons(f(a), bs)
+  }
+
+  def filter(p: A => Boolean): Stream[A] = foldRight[Stream[A]](empty) {
+    case (a, bs) if p(a) => cons(a, bs)
+    case (_, bs) => bs
+  }
+
+  def append[B>:A](s: => Stream[B]): Stream[B] = foldRight[Stream[B]](s){
+    case (a, bs) => cons(a, bs)
+  }
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] = foldRight[Stream[B]](empty) {
+    case (a, bs) => f(a).append(bs)
+  }
 
   //GOTO EXERCISE 7
 
@@ -102,19 +120,19 @@ object Stream {
   val ones: Stream[Int] = Stream.cons(1, ones)
 
   //EXERCISE 7
-  def constant[A](a: A): Stream[A] = ???
+  def constant[A](a: A): Stream[A] = Stream.cons(a, constant(a))
 
   //EXERCISE 8
-  def from(n: Int): Stream[Int] = ???
+  def from(n: Int): Stream[Int] = Stream.cons(n, from(n + 1))
 
   //EXERCISE 9
-  val fibs: Stream[Int] = ???
+  def fibs: Stream[Int] = ???
 
   //EXERCISE 10
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
 
   //EXERCISE 11
-  val fibsViaUnfold: Stream[Int] = ???
+//  val fibsViaUnfold: Stream[Int] = ???
   def fromViaUnfold(n: Int): Stream[Int] = ???
   def constantUnfold[A](a: A): Stream[A] = ???
   val onesUnfold: Stream[Int] = Stream.cons(1, ones)
@@ -125,8 +143,16 @@ object Stream {
 }
 
 object AppSpec extends App {
-  val s: Stream[Int] = Cons(() => 1, () => Cons(() => 2, () => Cons(() => 3, () => Cons(() => 4, () => Empty))))
+  val s1: Stream[Int] = Cons(() => 1, () => Cons(() => 2, () => Cons(() => 3, () => Cons(() => 4, () => Empty))))
 
-  println(s.takeWhileViaFold(_ % 2 == 1).toList())
-  println(s.takeWhileViaFold(_ < 3).toList())
+  val s2: Stream[Int] = Cons(() => 5, () => Cons(() => 6, () => Cons(() => 7, () => Cons(() => 8, () => Empty))))
+
+  val s3 = s1.flatMap(x => Stream(Seq.fill(x)(x): _*))
+
+  println(s3.toList())
+
+//  println(s.takeWhileViaFold(_ % 2 == 1).toList())
+//  println(s.takeWhileViaFold(_ < 3).toList())
+
+  println(s1.append(s2).toList())
 }
