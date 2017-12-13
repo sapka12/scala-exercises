@@ -85,6 +85,27 @@ trait Stream[+A] {
 
   //EXERCISE 12: Use unfold to implement map, take, takeWhile, zip and zipAll.
 
+//  def map[B](f: A => B): Stream[B] = foldRight[Stream[B]](empty){
+//    case (a, bs) => cons(f(a), bs)
+//  }
+
+  def mapViaUnfold[B](f: A => B): Stream[B] = unfold[B, Stream[A]](this){s =>
+    s match {
+      case Cons(h, t) => Some((f(h()), t()))
+      case Empty => None
+    }
+  }
+
+  def takeViaUnfold(n: Int): Stream[A] = unfold[A, (Int, Stream[A])]((n, this))( s =>
+    s match {
+      case (0, _) => None
+      case (_, Empty) => None
+      case (i, Cons(h, t)) => Some(h(), (i-1, t()))
+    }
+  )
+
+  def takeWhileViaUnfold(p: A => Boolean): Stream[A] = ???
+
   //EXERCISE 13 (hard)
   def startsWith[B](s: Stream[B]): Boolean = ???
 
@@ -126,16 +147,29 @@ object Stream {
   def from(n: Int): Stream[Int] = Stream.cons(n, from(n + 1))
 
   //EXERCISE 9
-  def fibs: Stream[Int] = ???
+  def fibs: Stream[Int] = {
+
+    def go(n0: Int, n1: Int): Stream[Int] = Stream.cons(n0, go(n1, n0 + n1))
+
+    go(0, 1)
+  }
 
   //EXERCISE 10
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match {
+    case Some((a, s)) => Stream.cons(a, unfold(s)(f))
+    case None => empty
+  }
 
   //EXERCISE 11
-//  val fibsViaUnfold: Stream[Int] = ???
-  def fromViaUnfold(n: Int): Stream[Int] = ???
-  def constantUnfold[A](a: A): Stream[A] = ???
-  val onesUnfold: Stream[Int] = Stream.cons(1, ones)
+  val fibsViaUnfold: Stream[Int] = unfold((1,1)){
+    case (n0, n1) => Some((n0, (n1, n0 + n1)))
+  }
+
+  def fromViaUnfold(n: Int): Stream[Int] = unfold(n)(i => Some((i, i + 1)))
+
+
+  def constantUnfold[A](a: A): Stream[A] = unfold(a)(_ => Some((a, a)))
+  val onesUnfold: Stream[Int] = constantUnfold(1)
 
   def hasSubsequence[A](s1: Stream[A], s2: Stream[A]): Boolean =
     s1.tails.exists(_.startsWith(s2))
@@ -149,10 +183,18 @@ object AppSpec extends App {
 
   val s3 = s1.flatMap(x => Stream(Seq.fill(x)(x): _*))
 
+
+
   println(s3.toList())
+
+  //println(s3.mapViaUnfold(_ + 1).toList())
+
+  println(s3.takeViaUnfold(3).toList())
+  println(Empty.takeViaUnfold(3).toList())
+  println(s3.takeViaUnfold(10).toList())
 
 //  println(s.takeWhileViaFold(_ % 2 == 1).toList())
 //  println(s.takeWhileViaFold(_ < 3).toList())
 
-  println(s1.append(s2).toList())
+  //println(s1.append(s2).toList())
 }
